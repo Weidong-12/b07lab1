@@ -3,23 +3,23 @@ import java.util.*;
 
 public class Polynomial {
     private double[] coef;
-    private int[] exp;     
+    private int[] expo;     
 
 
     public Polynomial() {
         coef = new double[]{0};
-        exp = new int[]{0};
+        expo = new int[]{0};
     }
 
 
     public Polynomial(double[] a, int[] b) {
         if (a.length != b.length) {
-            throw new IllegalArgumentException("Coefficient and exponent arrays must have the same length");
+            throw new IllegalArgumentException("zero coefficient");
         }
 
         List<Double> aList = new ArrayList<>();
         List<Integer> bList = new ArrayList<>();
-        for (int i = 0; i < a.length; i++) {
+        for (int i = 0; i < a.length; i++){
             if (a[i] != 0) {
                 aList.add(a[i]);
                 bList.add(b[i]);
@@ -27,10 +27,10 @@ public class Polynomial {
         }
 
         coef = new double[aList.size()];
-        exp = new int[bList.size()];
-        for (int i = 0; i < aList.size(); i++) {
+        expo = new int[bList.size()];
+        for (int i = 0; i < aList.size(); i++){
             coef[i] = aList.get(i);
-            exp[i] = bList.get(i);
+            expo[i] = bList.get(i);
         }
     }
 
@@ -43,7 +43,7 @@ public class Polynomial {
     }
 
 
-    private void getPolynomial(String p) {
+    private void getPolynomial(String p){
         p = p.replace("-", "+-");
         if (p.startsWith("+-")) p = p.substring(1);
         else if (p.startsWith("+")) p = p.substring(1);
@@ -57,16 +57,16 @@ public class Polynomial {
 
             double c;
             int e;
-            if (term.contains("x")) {
+            if (term.contains("x")){
                 String[] parts = term.split("x");
-                if (parts[0].equals("") || parts[0].equals("+")) {
+                if (parts[0].equals("") || parts[0].equals("+")){
                     c = 1;
                 } else if (parts[0].equals("-")) {
                     c = -1;
                 } else {
                     c = Double.parseDouble(parts[0]);
                 }
-                if (parts.length == 1 || parts[1].isEmpty()) {
+                if (parts.length == 1 || parts[1].isEmpty()){
                     e = 1;
                 } else {
                     e = Integer.parseInt(parts[1]);
@@ -80,43 +80,91 @@ public class Polynomial {
         }
 
         coef = new double[lc.size()];
-        exp = new int[le.size()];
-        for (int i = 0; i < lc.size(); i++) {
+        expo = new int[le.size()];
+        for (int i = 0; i < lc.size(); i++){
             coef[i] = lc.get(i);
-            exp[i] = le.get(i);
+            expo[i] = le.get(i);
         }
     }
 
 
-    public Polynomial add(Polynomial a) {
-        Map<Integer, Double> map = new HashMap<>();
-        for (int i = 0; i < coef.length; i++) {
-            map.put(exp[i], map.getOrDefault(exp[i], 0.0) + coef[i]);
+    public Polynomial add(Polynomial a){
+        int maxexpo = 0;
+        for(int e : this.expo){
+            if(e > maxexpo) maxexpo = e;
         }
+        for(int e : a.expo){
+            if(e > maxexpo) maxexpo = e;
+        }
+
+        double[] newcoef = new double[maxexpo + 1];
+        int[] newexpo = new int[maxexpo + 1];
+        for(int i = 0; i <= maxexpo; i++){
+            newexpo[i] = i;
+            newcoef[i] = 0;
+        }
+
+        for (int i = 0; i < coef.length; i++){
+            newcoef[expo[i]] += coef[i];
+        }
+
         for (int i = 0; i < a.coef.length; i++) {
-            map.put(a.exp[i], map.getOrDefault(a.exp[i], 0.0) + a.coef[i]);
+            newcoef[a.expo[i]] += a.coef[i];
         }
-        return fromMap(map);
+    
+        return new Polynomial(newcoef, newexpo);
     }
 
 
-    public Polynomial multiply(Polynomial a) {
-        Map<Integer, Double> map = new HashMap<>();
-        for (int i = 0; i < coef.length; i++) {
-            for (int j = 0; j < a.coef.length; j++) {
-                int newExp = exp[i] + a.exp[j];
-                double newCoef = coef[i] * a.coef[j];
-                map.put(newExp, map.getOrDefault(newExp, 0.0) + newCoef);
+    public Polynomial multiply(Polynomial a){		
+        int maxexpo = 0;
+        for (int e1 : this.expo){
+            for (int e2 : a.expo){
+                if (e1 + e2 > maxexpo){
+                    maxexpo = e1+e2;
+                }
             }
         }
-        return fromMap(map);
+    
+        double[] tempcoef = new double[maxexpo + 1];
+        int[] tempexpo = new int[maxexpo + 1];
+    
+        for (int i = 0; i <= maxexpo; i++){
+            tempexpo[i] = i;
+            tempcoef[i] = 0;
+        }
+    
+        for (int i = 0; i < coef.length; i++){
+            for (int j = 0; j < a.coef.length; j++) {
+                int expSum = expo[i] + a.expo[j];
+                tempcoef[expSum] += coef[i] * a.coef[j];
+            }
+        }
+
+        int zero = 0;
+        for(double c : tempcoef){
+            if(c != 0) zero++;
+        }
+    
+        double[] newCoef = new double[zero];
+        int[] newExpo = new int[zero];
+        int index = 0;
+        for(int i = 0; i < tempcoef.length; i++){
+            if(tempcoef[i] != 0){
+                newCoef[index] = tempcoef[i];
+                newExpo[index] = tempexpo[i];
+                index++;
+            }
+        }
+    
+        return new Polynomial(newCoef, newExpo);
     }
 
 
     public double evaluate(double x) {
         double result = 0;
         for (int i = 0; i < coef.length; i++) {
-            result += coef[i] * Math.pow(x, exp[i]);
+            result += coef[i] * Math.pow(x, expo[i]);
         }
         return result;
     }
@@ -134,28 +182,6 @@ public class Polynomial {
     }
 
 
-    private static Polynomial fromMap(Map<Integer, Double> map) {
-        List<Integer> eList = new ArrayList<>(map.keySet());
-        Collections.sort(eList);
-
-        List<Double> cList = new ArrayList<>();
-        List<Integer> exps = new ArrayList<>();
-        for (int e : eList) {
-            double c = map.get(e);
-            if (c != 0) {
-                cList.add(c);
-                exps.add(e);
-            }
-        }
-
-        double[] cArr = new double[cList.size()];
-        int[] eArr = new int[exps.size()];
-        for (int i = 0; i < cList.size(); i++) {
-            cArr[i] = cList.get(i);
-            eArr[i] = exps.get(i);
-        }
-        return new Polynomial(cArr, eArr);
-    }
 
 
     @Override
@@ -163,7 +189,7 @@ public class Polynomial {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < coef.length; i++) {
             double c = coef[i];
-            int e = exp[i];
+            int e = expo[i];
             if (c == 0) continue;
 
             if (sb.length() > 0 && c > 0) sb.append("+");
